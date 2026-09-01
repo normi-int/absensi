@@ -4,12 +4,12 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 
 export default function Login() {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const { signInWithUsername } = useAuth()
+  const { signInWithEmail } = useAuth()
   const { lang, setLang, t } = useLanguage()
   const navigate = useNavigate()
 
@@ -18,7 +18,7 @@ export default function Login() {
     setError(null)
     setSubmitting(true)
 
-    const { error } = await signInWithUsername(username, password)
+    const { error } = await signInWithEmail(email, password)
 
     setSubmitting(false)
 
@@ -56,15 +56,15 @@ export default function Login() {
       <form onSubmit={handleSubmit} style={styles.card}>
         <div style={styles.eyebrow}>{t('login.eyebrow')}</div>
 
-        <label style={styles.label} htmlFor="username">
-          {t('login.username')}
+        <label style={styles.label} htmlFor="email">
+          {t('login.email')}
         </label>
         <input
-          id="username"
-          type="text"
-          autoComplete="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          id="email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           style={styles.input}
           required
         />
@@ -89,10 +89,6 @@ export default function Login() {
         </button>
 
         <div style={styles.forgotRow}>
-          <a href="#" style={styles.forgotLink}>
-            {t('login.forgotUsername')}
-          </a>
-          <span style={{ color: 'var(--muted)', margin: '0 6px' }}>·</span>
           <a href="#" style={styles.forgotLink}>
             {t('login.forgotPassword')}
           </a>

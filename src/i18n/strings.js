@@ -5,15 +5,14 @@
 export const strings = {
   login: {
     eyebrow: { id: 'MASUK', en: 'SIGN IN' },
-    username: { id: 'Nama Pengguna', en: 'Username' },
+    email: { id: 'Email', en: 'Email' },
     password: { id: 'Kata Sandi', en: 'Password' },
     submit: { id: 'Masuk', en: 'Sign In' },
     submitting: { id: 'Sedang masuk…', en: 'Signing in…' },
-    forgotUsername: { id: 'Lupa nama pengguna', en: 'Forgot my username' },
     forgotPassword: { id: 'Lupa kata sandi', en: 'Forgot my password' },
     errorInvalid: {
-      id: 'Nama pengguna atau kata sandi salah.',
-      en: 'Incorrect username or password.',
+      id: 'Email atau kata sandi salah.',
+      en: 'Incorrect email or password.',
     },
     errorGeneric: {
       id: 'Terjadi kesalahan. Silakan coba lagi.',

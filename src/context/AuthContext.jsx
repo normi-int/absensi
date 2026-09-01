@@ -40,26 +40,15 @@ export function AuthProvider({ children }) {
     return () => listener.subscription.unsubscribe()
   }, [loadProfile])
 
-  /**
-   * Login screen collects a "username" per the confirmed design, but
-   * Supabase auth is keyed on email. We resolve username -> email first
-   * via the `profiles` table (public, username-only lookup), then sign in.
-   */
-  const signInWithUsername = useCallback(async (username, password) => {
-    const { data: profileRow, error: lookupError } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('username', username.trim().toLowerCase())
-      .single()
-
-    if (lookupError || !profileRow?.email) {
-      return { error: { message: 'invalid_credentials' } }
-    }
-
+  const signInWithEmail = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: profileRow.email,
+      email: email.trim().toLowerCase(),
       password,
     })
+
+    if (error) {
+      return { error: { message: 'invalid_credentials' } }
+    }
 
     return { data, error }
   }, [])
@@ -73,7 +62,7 @@ export function AuthProvider({ children }) {
     user: session?.user ?? null,
     profile,
     loading,
-    signInWithUsername,
+    signInWithEmail,
     signOut,
   }
 

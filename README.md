@@ -6,7 +6,7 @@ Built as a mobile-responsive web app (works in any phone browser, installable as
 
 ## Current status
 
-First working slice: **login (username/password) → homepage → check-in/check-out with geotag**, wired to a real Supabase project.
+First working slice: **login (email/password) → homepage → check-in/check-out with geotag**, wired to a real Supabase project.
 
 ## Setup
 
@@ -20,17 +20,13 @@ First working slice: **login (username/password) → homepage → check-in/check
    cp .env.example .env.local
    ```
 
-3. Run the database schema: open Supabase Dashboard → SQL Editor → New query, paste the contents of `supabase/migrations/0001_init.sql`, and run it. This creates the `profiles` and `attendance_records` tables with Row Level Security policies.
+3. Run the database schema, in order, in Supabase Dashboard → SQL Editor → New query:
+   - `supabase/migrations/0001_init.sql` — creates the `profiles` and `attendance_records` tables with Row Level Security policies.
+   - `supabase/migrations/0002_email_login.sql` — removes the `username` column; login is by email directly.
 
 4. Create a test staff account:
-   - Supabase Dashboard → Authentication → Users → Add user → enter an email + password.
-   - Then in the SQL Editor, set that user's login username and name (replace the email/values):
-     ```sql
-     update public.profiles
-     set username = 'testuser', full_name = 'Test User'
-     where email = 'the-email-you-used@example.com';
-     ```
-   - Now you can sign in on the login screen using `testuser` as the username and the password you set.
+   - Supabase Dashboard → Authentication → Users → Add user → enter an email + password (check "Auto Confirm User" if offered).
+   - That's it — no extra SQL step needed. Sign in on the login screen with that email and password.
 
 5. Run the dev server:
    ```
@@ -40,7 +36,7 @@ First working slice: **login (username/password) → homepage → check-in/check
 ## Project structure
 
 - `src/lib/supabase.js` — Supabase client setup
-- `src/context/AuthContext.jsx` — session state, username→email login resolution
+- `src/context/AuthContext.jsx` — session state, email/password sign-in
 - `src/context/LanguageContext.jsx` — ID/EN toggle state, persisted per-user
 - `src/i18n/strings.js` — all UI text, keyed by screen — add new keys here as new screens are built
 - `src/pages/` — one file per screen
@@ -49,6 +45,6 @@ First working slice: **login (username/password) → homepage → check-in/check
 
 ## Notes
 
-- Login screen labels the field "Username" per the confirmed design, but Supabase auth underneath is email+password — the `profiles` table maps username → email at login time.
+- Login is by email + password directly (no separate username).
 - Default language is Indonesian; toggling persists to the user's `profiles.language` column so it follows them across devices.
 - `.env.local` is gitignored — never commit real Supabase keys.
