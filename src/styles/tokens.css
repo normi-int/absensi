@@ -1,0 +1,50 @@
+/* NORMI design tokens — from the confirmed Visual Design palette in the spec.
+   Keep every screen's colors sourced from these variables, never hardcoded hex. */
+:root {
+  /* Core / Brand */
+  --ink: #1F2937;
+  --accent: #2563EB;
+  --muted: #6B7280;
+  --page: #F4F5F7;
+  --line: #E5E7EB;
+  --card: #FFFFFF;
+
+  /* Action buttons */
+  --add: #F26F21;
+  --proceed: #22AA96;
+  --preview: #EDAE0F;
+  --cancel: #9B0A0A;
+  --back: #727272;
+  --brown: #3B2314;
+
+  /* Status / semantic */
+  --pass: #16A34A;
+  --fail: #DC2626;
+  --hi-yellow: #FDE047;
+  --priority-row: #FEF9C3;
+  --banner-bg: #FCE7F3;
+  --banner-text: #9D174D;
+
+  /* Role badges */
+  --owner-bg: #FEE2E2;
+  --owner-text: #991B1B;
+  --admin-bg: #EDE9FE;
+  --admin-text: #5B21B6;
+  --viewer-bg: #E0F2FE;
+  --viewer-text: #075985;
+  --member-bg: #F3F4F6;
+  --member-text: #374151;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
