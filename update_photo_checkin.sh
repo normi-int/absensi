@@ -1,3 +1,12 @@
+#!/bin/bash
+# Run this from inside your absensi project folder
+# (Claude Desktop/project/absensi/absensi — the one with .git in it).
+# Adds check-in/out photo capture + compression, and the storage migration.
+set -e
+
+mkdir -p supabase/migrations
+
+cat > src/pages/Home.jsx << 'ABSENSI_EOF'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -354,3 +363,148 @@ const styles = {
     fontWeight: 600,
   },
 }
+ABSENSI_EOF
+
+cat > src/i18n/strings.js << 'ABSENSI_EOF'
+// Central translation table. Every UI string in the app should live here,
+// keyed by a short dot-path name, with an `id` (Indonesian, default) and
+// `en` (English) value. Add new keys as new screens are built.
+
+export const strings = {
+  login: {
+    eyebrow: { id: 'MASUK', en: 'SIGN IN' },
+    email: { id: 'Email', en: 'Email' },
+    password: { id: 'Kata Sandi', en: 'Password' },
+    submit: { id: 'Masuk', en: 'Sign In' },
+    submitting: { id: 'Sedang masuk…', en: 'Signing in…' },
+    forgotPassword: { id: 'Lupa kata sandi', en: 'Forgot my password' },
+    errorInvalid: {
+      id: 'Email atau kata sandi salah.',
+      en: 'Incorrect email or password.',
+    },
+    errorGeneric: {
+      id: 'Terjadi kesalahan. Silakan coba lagi.',
+      en: 'Something went wrong. Please try again.',
+    },
+  },
+  home: {
+    greeting: { id: 'Hai', en: 'Hi' },
+    todaySchedule: { id: "Jadwal Hari Ini", en: "Today's Schedule" },
+    notCheckedIn: { id: 'Belum absen masuk', en: 'Not yet checked in' },
+    checkedIn: { id: 'Sudah absen masuk', en: 'Checked in' },
+    checkIn: { id: 'Absen Masuk', en: 'Check In' },
+    checkOut: { id: 'Absen Pulang', en: 'Check Out' },
+    uploading: { id: 'Mengunggah foto…', en: 'Uploading photo…' },
+    photoHint: {
+      id: 'Kamera akan terbuka untuk ambil foto selfie',
+      en: 'Your camera will open to take a selfie',
+    },
+    alDaysLeft: { id: 'Sisa cuti', en: 'AL days left' },
+    phBanked: { id: 'PH terkumpul', en: 'PH banked' },
+    notifications: { id: 'Notifikasi', en: 'Notifications' },
+    quickActions: { id: 'Aksi Cepat', en: 'Quick Actions' },
+    ketidakhadiran: { id: 'Ketidakhadiran', en: 'Absence' },
+    kehadiran: { id: 'Kehadiran', en: 'Attendance' },
+    lupaAbsen: { id: 'Lupa Absen', en: 'Forgot to Clock' },
+    roster: { id: 'Roster', en: 'Roster' },
+    signOut: { id: 'Keluar', en: 'Sign Out' },
+  },
+  common: {
+    loading: { id: 'Memuat…', en: 'Loading…' },
+  },
+}
+
+/** Look up a string by dot path, e.g. t('login.submit', lang) */
+export function t(path, lang) {
+  const parts = path.split('.')
+  let node = strings
+  for (const p of parts) {
+    node = node?.[p]
+    if (node === undefined) return path // fallback: show the key itself
+  }
+  return node[lang] ?? node.id ?? path
+}
+ABSENSI_EOF
+
+cat > supabase/migrations/0003_backfill_profiles.sql << 'ABSENSI_EOF'
+-- ============================================================
+-- Absensi — backfill missing profile rows
+-- Run this in Supabase: Dashboard -> SQL Editor -> New query -> paste -> Run
+--
+-- If a user was created in Authentication -> Users before the
+-- handle_new_user trigger existed (or the trigger didn't fire for
+-- some other reason), their profiles row is missing, which is why
+-- the app shows "profile is null" on Homepage.
+--
+-- This finds every auth.users row with no matching profiles row and
+-- creates one. Safe to run any time — it only inserts what's missing.
+-- ============================================================
+
+insert into public.profiles (id, email, full_name)
+select
+  u.id,
+  u.email,
+  coalesce(u.raw_user_meta_data->>'full_name', u.email)
+from auth.users u
+left join public.profiles p on p.id = u.id
+where p.id is null;
+
+-- Verify: this should now show one row per user in auth.users
+select id, email, full_name, role, language from public.profiles;
+ABSENSI_EOF
+
+cat > supabase/migrations/0004_photo_storage.sql << 'ABSENSI_EOF'
+-- ============================================================
+-- Absensi — check-in/out photo storage
+-- Run this in Supabase: Dashboard -> SQL Editor -> New query -> paste -> Run
+--
+-- Creates a private storage bucket for attendance photos, and RLS
+-- policies so each staff member can only upload/read their own
+-- photos (path convention: {staff_id}/{date}_{checkin|checkout}.jpg).
+-- Admin roles (owner/hr/om) can read everyone's, for future approval
+-- / audit screens.
+-- ============================================================
+
+-- Private bucket: photos are not publicly accessible by URL, only via
+-- signed URLs generated on demand (or direct download by an authorized user).
+insert into storage.buckets (id, name, public)
+values ('attendance-photos', 'attendance-photos', false)
+on conflict (id) do nothing;
+
+-- A staff member can upload into their own folder only.
+-- Path convention: storage path = "{auth.uid()}/filename.jpg"
+create policy "attendance_photos_insert_own"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'attendance-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- A staff member can overwrite/update their own photos (upsert on retry).
+create policy "attendance_photos_update_own"
+  on storage.objects for update
+  using (
+    bucket_id = 'attendance-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- A staff member can read their own photos; HR/OM/Owner can read everyone's.
+create policy "attendance_photos_select_own_or_admin"
+  on storage.objects for select
+  using (
+    bucket_id = 'attendance-photos'
+    and (
+      (storage.foldername(name))[1] = auth.uid()::text
+      or exists (
+        select 1 from public.profiles p
+        where p.id = auth.uid() and p.role in ('owner', 'hr', 'om')
+      )
+    )
+  );
+ABSENSI_EOF
+
+echo "Files updated."
+git add -A
+git commit -m "Add check-in/out photo capture with client-side compression"
+echo ""
+echo "Done. Now run: git push"

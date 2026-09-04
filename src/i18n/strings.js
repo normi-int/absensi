@@ -26,6 +26,11 @@ export const strings = {
     checkedIn: { id: 'Sudah absen masuk', en: 'Checked in' },
     checkIn: { id: 'Absen Masuk', en: 'Check In' },
     checkOut: { id: 'Absen Pulang', en: 'Check Out' },
+    uploading: { id: 'Mengunggah foto…', en: 'Uploading photo…' },
+    photoHint: {
+      id: 'Kamera akan terbuka untuk ambil foto selfie',
+      en: 'Your camera will open to take a selfie',
+    },
     alDaysLeft: { id: 'Sisa cuti', en: 'AL days left' },
     phBanked: { id: 'PH terkumpul', en: 'PH banked' },
     notifications: { id: 'Notifikasi', en: 'Notifications' },
