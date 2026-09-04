@@ -9,7 +9,7 @@ export default function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
-        <BrowserRouter>
+        <BrowserRouter basename="/absensi">
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route
